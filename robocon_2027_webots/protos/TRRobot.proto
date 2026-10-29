@@ -1,0 +1,573 @@
+#VRML_SIM R2025a utf8
+
+PROTO TRRobot [
+  field SFVec3f translation 0 0.25 0
+  field SFRotation rotation 0 1 0 0
+  field SFString name "tr_robot"
+  field SFString controller "<extern>"
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    controller IS controller
+
+    children [
+      # =====================================================
+      # SENSOR ORIENTASI
+      # =====================================================
+      InertialUnit {
+        name "inertial_unit"
+      }
+
+      # =====================================================
+      # PEGANGAN GRIPPER KIRI
+      # ===================================================== 
+
+      #1 ================ BENTUK
+      Solid {
+        translation 0.27 0.23 0.085
+        rotation 0 0 1 0
+        scale 1 1 1
+        name "pegangan_gripper_kiri"
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.207843 0.517647 0.894118
+              roughness 0.5
+              metalness 0
+            }
+            geometry Box {
+              size 0.06 0.04 0.07
+              castShadows TRUE
+              isPickable TRUE
+            }
+          }
+        ]
+        boundingObject Box {
+          size 0.06 0.04 0.07
+        }
+        physics Physics {
+          density -1
+          mass 0.1
+        }
+        contactMaterial "gripper_material"
+        translationStep 0.01
+        rotationStep 0.262
+      }
+
+      # =====================================================
+      # GRIPPER KIRI (Batang Utama + Ujung Jari Nyatu)
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor 0.30 0.19 0.0
+          axis 0 0 -20
+          dampingConstant 0.1
+          staticFriction 1.0
+        }
+        device [
+          RotationalMotor {
+            name "gripper_left_motor"
+            maxTorque 35.0
+          }
+          PositionSensor {
+            name "gripper_left_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.3900011408573656 0.23000002745394532 0.10997260152411148
+          children [
+            
+            # 1. BATANG UTAMA CAPIT
+            Pose {
+              translation 0.0 0.0 0.0
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.207843 0.517647 0.894118 }
+                  geometry Box { size 0.25 0.02 0.02 }
+                }
+              ]
+            }
+
+            # 2. UJUNG JARI (Engsel + Motor + Bentuk)
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                anchor 0.125 0.0 0.0 
+                axis 0 -10 0           
+                dampingConstant 0.1
+                staticFriction 1.0
+              }
+              device [
+                RotationalMotor {
+                  name "gripper_ujung_kiri_motor"
+                  maxTorque 50.0
+                }
+                PositionSensor {
+                  name "gripper_ujung_kiri_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.125 0.0 0.0 
+                rotation 0 1 0 1.572      
+                children [
+                  Shape {
+                    appearance PBRAppearance { baseColor 0.207843 0.517647 0.894118 }
+                    geometry Box { size 0.06 0.04 0.15 }
+                  }
+                ]
+                name "pegangan_gripper_kiri_2"
+                contactMaterial "gripper_material"
+                boundingObject Box { size 0.06 0.04 0.15 }
+                physics Physics { density -1 mass 0.1 }
+              }
+            }
+          ]
+          
+          name "gripper_left_solid"
+          contactMaterial "gripper_material"
+          
+          boundingObject Group {
+            children [
+              Pose { translation 0.0 0.0 0.0 children [ Box { size 0.25 0.02 0.02 } ] }
+              Pose { 
+                translation 0.125 0.0 0.0 
+                rotation 0 1 0 1.572 
+                children [ Box { size 0.06 0.04 0.15 } ] 
+              }
+            ]
+          }
+          
+          physics Physics { density -1 mass 0.3 }
+        }
+      }
+
+      # =====================================================
+      # PEGANGAN GRIPPER KANAN
+      # ===================================================== 
+
+      #1 ================ BENTUK
+      Solid {
+        translation 0.27 -0.23 0.085
+        rotation 0 0 1 0
+        scale 1 1 1
+        name "pegangan_gripper_kanan"
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.207843 0.517647 0.894118
+              roughness 0.5
+              metalness 0
+            }
+            geometry Box {
+              size 0.06 0.04 0.07
+              castShadows TRUE
+              isPickable TRUE
+            }
+          }
+        ]
+        boundingObject Box {
+          size 0.06 0.04 0.07
+        }
+        physics Physics {
+          density -1
+          mass 0.1
+        }
+        contactMaterial "gripper_material"
+        translationStep 0.01
+        rotationStep 0.262
+      }
+
+      # =====================================================
+      # GRIPPER KANAN (Batang Utama + Ujung Jari Nyatu)
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor 0.30 -0.19 0.0
+          axis 0 0 -20
+          dampingConstant 0.1
+          staticFriction 1.0
+        }
+        device [
+          RotationalMotor {
+            name "gripper_right_motor"
+            maxTorque 35.0
+          }
+          PositionSensor {
+            name "gripper_right_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.3900011408573656 -0.23000002745394532 0.10997260152411148
+          children [
+            
+            # 1. BATANG UTAMA CAPIT
+            Pose {
+              translation 0.0 0.0 0.0
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.207843 0.517647 0.894118 }
+                  geometry Box { size 0.25 0.02 0.02 }
+                }
+              ]
+            }
+
+            # 2. UJUNG JARI (Engsel + Motor + Bentuk)
+            HingeJoint {
+              jointParameters HingeJointParameters {
+                anchor 0.125 0.0 0.0
+                axis 0 10 0           
+                dampingConstant 0.1
+                staticFriction 1.0
+              }
+              device [
+                RotationalMotor {
+                  name "gripper_ujung_kanan_motor"
+                  maxTorque 50.0
+                }
+                PositionSensor {
+                  name "gripper_ujung_kanan_sensor"
+                }
+              ]
+              endPoint Solid {
+                translation 0.125 0.0 0.0
+                rotation 0 1 0 -1.572      
+                children [
+                  Shape {
+                    appearance PBRAppearance { baseColor 0.207843 0.517647 0.894118 }
+                    geometry Box { size 0.06 0.04 0.15 }
+                  }
+                ]
+                name "pegangan_gripper_kanan_2"
+                contactMaterial "gripper_material"
+                boundingObject Box { size 0.06 0.04 0.15 }
+                physics Physics { density -1 mass 0.1 }
+              }
+            }
+          ]
+          
+          name "gripper_right_solid"
+          contactMaterial "gripper_material"
+          
+          boundingObject Group {
+            children [
+              Pose { translation 0.0 0.0 0.0 children [ Box { size 0.25 0.02 0.02 } ] }
+              Pose { 
+                translation 0.125 0.0 0.0 
+                rotation 0 1 0 -1.572 
+                children [ Box { size 0.06 0.04 0.15 } ] 
+              }
+            ]
+          }
+          
+          physics Physics { density -1 mass 0.3 }
+        }
+      }
+
+      # =====================================================
+      # LIDAR
+      # =====================================================
+
+      # Bentuk lidar robot
+      Pose {
+        translation 0.21 0.04 0.14
+        rotation 0 0 1 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.2 0.819608 0.478431
+            }
+            geometry Capsule {
+              height 0.1
+              radius 0.02
+            }
+          }
+        ]
+      }
+
+      Lidar {
+        name "lidar"
+        translation 0.21 0.04 0.14
+        rotation 0 0 1 0
+        numberOfLayers 1
+        minRange 0.1
+        maxRange 5.0
+        horizontalResolution 360
+        fieldOfView 6.28318
+        verticalFieldOfView 0.1
+        noise 0.0
+      }
+
+      # =====================================================
+      # KAMERA
+      # =====================================================
+
+      # Bentuk kamera robot
+      Pose {
+        translation 0.21 -0.04 0.14
+        rotation 0 0 1 0
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.384314 0.627451 0.917647
+            }
+            geometry Box {
+              size 0.1 0.06 0.06
+            }
+          }
+        ]
+      }
+
+      Camera {
+        name "camera"
+        translation 0.21 -0.04 0.14
+        rotation 0 0 1 0
+        width 640
+        height 480
+        fieldOfView 1.5
+      }
+
+      # =====================================================
+      # CHASSIS
+      # =====================================================
+      Shape {
+        appearance PBRAppearance {
+          baseColor 0.368627 0.360784 0.392157
+          roughness 0.7
+          metalness 0
+        }
+        geometry Box {
+          size 0.6 0.5 0.1
+        }
+      }
+      Pose {
+        translation -0.08 9.80441e-08 0.055
+        rotation 0.00039765393711950334 0.00039765393711950334 0.9999998418713337 -1.5707953071795862
+        
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColorMap ImageTexture {
+                url [
+                    "../worlds/jpeg-removebg-preview.png"
+                ]
+              }
+              roughness 0.5
+              metalness 0
+            }
+            geometry Box { 
+              size 0.5 0.5 0.001 
+            }
+          }
+        ]
+      }
+
+      # Penanda depan robot
+      Pose {
+        translation 0.2 0.0 0.08
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.207843 0.517647 0.894118
+              roughness 0.7
+              metalness 0
+            }
+            geometry Box {
+              size 0.08 0.5 0.08
+            }
+          }
+        ]
+      }
+
+      # =====================================================
+      # FRONT LEFT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor 0.18 0.285 0.0
+          axis 0 1 0
+          dampingConstant 0.01
+          staticFriction 0
+        }
+        device [
+          RotationalMotor {
+            name "front_left_wheel_motor"
+            maxVelocity 30
+            maxTorque 15
+          }
+          PositionSensor {
+            name "front_left_wheel_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.18 0.285 0.0
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.03 0.03 0.03
+                roughness 1
+                metalness 0
+              }
+              geometry DEF MECANUM_WHEEL_GEOMETRY Cylinder {
+                radius 0.10
+                height 0.06
+                subdivision 24
+              }
+            }
+          ]
+          name "front_left_wheel"
+          contactMaterial "mecanum_left_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics {
+            density -1
+            mass 0.40
+          }
+        }
+      }
+
+      # =====================================================
+      # FRONT RIGHT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor 0.18 -0.285 0.0
+          axis 0 1 0
+          dampingConstant 0.01
+          staticFriction 0
+        }
+        device [
+          RotationalMotor {
+            name "front_right_wheel_motor"
+            maxVelocity 30
+            maxTorque 15
+          }
+          PositionSensor {
+            name "front_right_wheel_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.18 -0.285 0.0
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.03 0.03 0.03
+                roughness 1
+                metalness 0
+              }
+              geometry USE MECANUM_WHEEL_GEOMETRY
+            }
+          ]
+          name "front_right_wheel"
+          contactMaterial "mecanum_right_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics {
+            density -1
+            mass 0.40
+          }
+        }
+      }
+
+      # =====================================================
+      # REAR LEFT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor -0.18 0.285 0.0
+          axis 0 1 0
+          dampingConstant 0.01
+          staticFriction 0
+        }
+        device [
+          RotationalMotor {
+            name "rear_left_wheel_motor"
+            maxVelocity 30
+            maxTorque 15
+          }
+          PositionSensor {
+            name "rear_left_wheel_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.18 0.285 0.0
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.03 0.03 0.03
+                roughness 1
+                metalness 0
+              }
+              geometry USE MECANUM_WHEEL_GEOMETRY
+            }
+          ]
+          name "rear_left_wheel"
+          contactMaterial "mecanum_right_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics {
+            density -1
+            mass 0.40
+          }
+        }
+      }
+
+      # =====================================================
+      # REAR RIGHT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          anchor -0.18 -0.285 0.0
+          axis 0 1 0
+          dampingConstant 0.01
+          staticFriction 0
+        }
+        device [
+          RotationalMotor {
+            name "rear_right_wheel_motor"
+            maxVelocity 30
+            maxTorque 15
+          }
+          PositionSensor {
+            name "rear_right_wheel_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.18 -0.285 0.0
+          rotation 1 0 0 1.5708
+          children [
+            Shape {
+              appearance PBRAppearance {
+                baseColor 0.03 0.03 0.03
+                roughness 1
+                metalness 0
+              }
+              geometry USE MECANUM_WHEEL_GEOMETRY
+            }
+          ]
+          name "rear_right_wheel"
+          contactMaterial "mecanum_left_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics {
+            density -1
+            mass 0.40
+          }
+        }
+      }
+    ]
+
+    name IS name
+    contactMaterial "robot_chassis"
+    boundingObject Box {
+      size 0.6 0.5 0.1
+    }
+    physics Physics {
+      density -1
+      mass 12
+      centerOfMass [
+        0 -0.03 0
+      ]
+    }
+  }
+}

@@ -1,0 +1,318 @@
+<?xml version="1.0"?>
+
+<robot
+  xmlns:xacro="http://www.ros.org/wiki/xacro"
+  name="tr_robot">
+
+  <!-- ==================================================== -->
+  <!-- Parameter chassis                                    -->
+  <!-- Satuan panjang: meter                                -->
+  <!-- Satuan massa: kilogram                               -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="base_length" value="0.50"/>
+  <xacro:property name="base_width" value="0.50"/>
+  <xacro:property name="base_height" value="0.1"/>
+  <xacro:property name="base_mass" value="10.0"/>
+
+  <!-- ==================================================== -->
+  <!-- Parameter roda mecanum -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="wheel_radius" value="0.10"/>
+  <xacro:property name="wheel_width" value="0.06"/>
+  <xacro:property name="wheel_mass" value="0.40"/>
+
+  <!--
+  Jarak pusat roda dari pusat robot.
+  wheel_x = setengah wheelbase depan-belakang
+  wheel_y = setengah track width kiri-kanan
+  -->
+
+  <xacro:property name="wheel_x" value="0.23"/>
+  <xacro:property name="wheel_y" value="0.305"/>
+
+  <!-- Jarak bagian bawah chassis dari lantai -->
+  <xacro:property name="ground_clearance" value="0.10"/>
+
+  <!-- Posisi pusat chassis terhadap base_footprint -->
+  <xacro:property
+    name="base_center_z"
+    value="${ground_clearance + base_height / 2.0}"/>
+
+  <xacro:property
+    name="wheel_center_z"
+    value="${ground_clearance - wheel_radius}"/>
+
+  <!-- ==================================================== -->
+  <!-- Parameter visual roller -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="roller_radius" value="0.012"/>
+  <xacro:property name="roller_length" value="0.070"/>
+
+  <!-- ==================================================== -->
+  <!-- Material visual                                      -->
+  <!-- ==================================================== -->
+
+  <material name="tr_blue">
+    <color rgba="0.10 0.25 0.80 1.0"/>
+  </material>
+  
+  <material name="wheel_black">
+    <color rgba="0.03 0.03 0.03 1.0"/>
+  </material>
+
+  <material name="roller_gray">
+    <color rgba="0.30 0.30 0.30 1.0"/>
+  </material>
+
+  <!-- ==================================================== -->
+  <!-- Root frame -->
+  <!-- ==================================================== -->
+
+  <link name="base_footprint"/>
+
+  <!-- ==================================================== -->
+  <!-- base_footprint                                       -->
+  <!-- Frame virtual yang berada di permukaan lantai        -->
+  <!-- ==================================================== -->
+
+  <!-- ==================================================== -->
+  <!-- base_link                                            -->
+  <!-- Link fisik utama robot                               -->
+  <!-- ==================================================== -->
+
+  <link name="base_link">
+
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+
+      <geometry>
+        <box
+          size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+
+      <material name="tr_blue"/>
+    </visual>
+
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+
+      <geometry>
+        <box
+          size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0"/>
+
+      <mass value="${base_mass}"/>
+
+      <inertia
+        ixx="${base_mass * (base_width * base_width
+              + base_height * base_height) / 12.0}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${base_mass * (base_length * base_length
+              + base_height * base_height) / 12.0}"
+        iyz="0.0"
+        izz="${base_mass * (base_length * base_length
+              + base_width * base_width) / 12.0}"/>
+    </inertial>
+
+  </link>
+
+  <joint
+    name="base_footprint_to_base_link"
+    type="fixed">
+
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+
+    <origin xyz="0 0 ${base_center_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ==================================================== -->
+  <!-- Inertia cylinder roda -->
+  <!-- Axle roda sejajar sumbu Y -->
+  <!-- ==================================================== -->
+
+  <xacro:macro 
+    name="mecanum_wheel_inertia" 
+    params="mass radius width">
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+
+      <mass value="${mass}"/>
+
+      <inertia
+        ixx="${1.0 / 12.0 * mass * (3.0 * radius * radius + width * width)}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${1.0 / 2.0 * mass * radius * radius}"
+        iyz="0.0"
+        izz="${1.0 / 12.0 * mass * (3.0 * radius * radius + width * width)}"/>
+    </inertial>
+    
+  </xacro:macro>
+
+  <!-- ==================================================== -->
+  <!-- Visual satu roller -->
+  <!-- roller_sign = +1 atau -1 menentukan kemiringan -->
+  <!-- ==================================================== -->
+
+  <xacro:macro
+    name="roller_visual" 
+    params="x z roller_sign">
+
+    <visual>
+      <origin
+        xyz="${x} 0 ${z}"
+        rpy="${pi / 2} ${roller_sign * 1.5708/2} 0"/>
+
+      <geometry>
+        <cylinder
+          radius="${roller_radius}"
+          length="${roller_length}"/>
+      </geometry>
+
+      <material name="roller_gray"/>
+    </visual>
+  </xacro:macro>
+
+  <!-- ==================================================== -->
+  <!-- Macro roda mecanum -->
+  <!-- ==================================================== -->
+
+  <xacro:macro 
+    name="mecanum_wheel" 
+    params="prefix x y z roller_sign">
+
+    <link name="${prefix}_wheel_link">
+
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="${pi / 2.0} 0 0"/>
+
+        <geometry>
+          <cylinder
+            radius="${wheel_radius}"
+            length="${wheel_width}"/>
+        </geometry>
+
+        <material name="wheel_black"/>
+      </visual>
+
+      <xacro:roller_visual
+        x="0.07"
+        z="0.07"
+        roller_sign="${roller_sign}"/>
+      
+      <xacro:roller_visual
+        x="-0.07"
+        z="0.07"
+        roller_sign="${roller_sign}"/>
+
+      <xacro:roller_visual
+        x="0.07"
+        z="-0.07"
+        roller_sign="${roller_sign}"/>
+
+      <xacro:roller_visual
+        x="-0.07"
+        z="-0.07"
+        roller_sign="${roller_sign}"/>
+
+      <collision>
+        <origin
+          xyz="0 0 0"
+          rpy="${pi / 2.0} 0 0"/>
+
+        <geometry>
+          <cylinder
+            radius="${wheel_radius}"
+            length="${wheel_width}"/>
+        </geometry>
+      </collision>
+
+      <xacro:mecanum_wheel_inertia
+        mass="${wheel_mass}"
+        radius="${wheel_radius}"
+        width="${wheel_width}"/>
+
+    </link>
+
+    <joint
+      name="${prefix}_wheel_joint"
+      type="continuous">
+
+      <parent link="base_link"/>
+      <child link="${prefix}_wheel_link"/>
+
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+
+      <dynamics 
+        damping="0.01" 
+        friction="0.0"/>
+    </joint>
+    
+  </xacro:macro>
+
+  <!-- ==================================================== -->
+  <!-- Joint base_footprint ke base_link                    -->
+  <!-- Tidak diberi offset karena geometry base_link sudah  -->
+  <!-- mempunyai origin sendiri terhadap frame base_link    -->
+  <!-- ==================================================== -->
+
+  
+
+  <!-- ==================================================== -->
+  <!-- Susunan mecanum pola X -->
+  <!-- -->
+  <!-- Depan robot = +X -->
+  <!-- Kiri robot = +Y -->
+  <!-- -->
+  <!-- FL \ / FR -->
+  <!-- RL / \ RR -->
+  <!-- ==================================================== -->
+
+  <xacro:mecanum_wheel
+    prefix="front_left"
+    x="${wheel_x}"
+    y="${wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="-1"/>
+
+  <xacro:mecanum_wheel
+    prefix="front_right"
+    x="${wheel_x}"
+    y="${-wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="1"/> 
+
+  <xacro:mecanum_wheel
+    prefix="rear_left"
+    x="${-wheel_x}"
+    y="${wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="1"/> 
+
+  <xacro:mecanum_wheel
+    prefix="rear_right"
+    x="${-wheel_x}"
+    y="${-wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="-1"/>   
+
+</robot>

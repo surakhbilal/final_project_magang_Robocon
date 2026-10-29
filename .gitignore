@@ -1,0 +1,18 @@
+# Editor / IDE
+.vscode/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Python packaging
+*.egg-info/
+
+# Temporary files
+*.swp
+*.swo
+*.tmp
+*.log# ROS 2 / colcon build artifacts
+build/
+install/
+log/

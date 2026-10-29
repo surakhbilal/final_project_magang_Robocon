@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robot Control Panel</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 30px;
+            margin: 0;
+        }
+        h1 { margin-bottom: 20px; }
+        .speed-control {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn {
+            width: 70px;
+            height: 70px;
+            margin: 5px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 12px;
+            border: 2px solid #555;
+            background-color: #333;
+            color: white;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s;
+        }
+        .btn:active, .btn.active {
+            background-color: #4caf50;
+            border-color: #fff;
+            transform: scale(0.95);
+        }
+        .grip-close { background-color: #d32f2f; }
+        .grip-open { background-color: #2e7d32; }
+        .row { display: flex; justify-content: center; }
+        .status {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aaa;
+            text-align: center;
+        }
+        .disconnected { color: #f44336; }
+        .connected { color: #4caf50; }
+    </style>
+</head>
+<body>
+    <h1>🤖 Robot Control Panel</h1>
+
+    <div class="speed-control">
+        <label>Kecepatan:</label>
+        <input type="range" id="speedSlider" min="0.1" max="1.0" step="0.1" value="0.5">
+        <span id="speedValue">0.5 m/s</span>
+    </div>
+
+    <div class="row">
+        <button class="btn" data-key="q">Q</button>
+        <button class="btn" data-key="w">W</button>
+        <button class="btn" data-key="e">E</button>
+    </div>
+    <div class="row">
+        <button class="btn" data-key="a">A</button>
+        <button class="btn" data-key="s">S</button>
+        <button class="btn" data-key="d">D</button>
+    </div>
+    <div class="row" style="margin-top: 20px;">
+        <button class="btn grip-close" id="btnGripClose">O</button>
+        <button class="btn grip-open" id="btnGripOpen">P</button>
+    </div>
+
+    <div class="status" id="status">
+        <p>Koneksi: <span id="connStatus" class="disconnected">Terputus</span></p>
+        <p>Tombol aktif: <span id="activeKey">-</span></p>
+    </div>
+
+    <script>
+        // === KONFIGURASI ===
+        const WS_URL = "ws://localhost:9090"; // Rosbridge
+        const PUBLISH_RATE = 100; // ms (10 Hz)
+
+        let ws = null;
+        let currentKey = null;
+        let speed = 0.5;
+        let publishInterval = null;
+
+        // === KONEKSI ===
+        function connect() {
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                console.log("✅ Terhubung ke rosbridge");
+                document.getElementById("connStatus").innerText = "Terhubung";
+                document.getElementById("connStatus").className = "connected";
+            };
+
+            ws.onclose = () => {
+                console.log("❌ Terputus");
+                document.getElementById("connStatus").innerText = "Terputus";
+                document.getElementById("connStatus").className = "disconnected";
+                setTimeout(connect, 2000);
+            };
+
+            ws.onerror = (err) => {
+                console.error("WebSocket Error:", err);
+            };
+        }
+
+        // === PUBLISH GERAKAN RODA ===
+        function publishTwist(vx, vy, wz) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const msg = {
+                    op: "publish",
+                    topic: "/foxglove_cmd",
+                    type: "geometry_msgs/msg/Twist",
+                    msg: {
+                        linear: { x: vx, y: vy, z: 0 },
+                        angular: { x: 0, y: 0, z: wz }
+                    }
+                };
+                ws.send(JSON.stringify(msg));
+            }
+        }
+
+        // === PUBLISH CAPIT (Topik Baru /ui/gripper_cmd) ===
+        function publishGripperUI(value) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const msg = {
+                    op: "publish",
+                    topic: "/ui/gripper_cmd", // Ke Node Foxglove, bukan langsung ke driver
+                    type: "std_msgs/msg/Float64",
+                    msg: { data: value }
+                };
+                ws.send(JSON.stringify(msg));
+            }
+        }
+
+        // === LOGIKA TAHAN TOMBOL ===
+        function startHold(key) {
+            currentKey = key;
+            document.getElementById("activeKey").innerText = key.toUpperCase();
+
+            if (publishInterval) clearInterval(publishInterval);
+
+            publishInterval = setInterval(() => {
+                const s = speed;
+                if (currentKey === "w") publishTwist(s, 0, 0);
+                else if (currentKey === "s") publishTwist(-s, 0, 0);
+                else if (currentKey === "a") publishTwist(0, s, 0);
+                else if (currentKey === "d") publishTwist(0, -s, 0);
+                else if (currentKey === "q") publishTwist(0, 0, 0.5);
+                else if (currentKey === "e") publishTwist(0, 0, -0.5);
+            }, PUBLISH_RATE);
+        }
+
+        function stopHold() {
+            currentKey = null;
+            document.getElementById("activeKey").innerText = "-";
+            if (publishInterval) {
+                clearInterval(publishInterval);
+                publishInterval = null;
+            }
+            publishTwist(0, 0, 0);
+        }
+
+        // === SETUP TOMBOL ===
+        document.querySelectorAll(".btn[data-key]").forEach(btn => {
+            const key = btn.dataset.key;
+            btn.addEventListener("mousedown", (e) => { e.preventDefault(); startHold(key); });
+            btn.addEventListener("mouseup", stopHold);
+            btn.addEventListener("mouseleave", stopHold);
+            btn.addEventListener("touchstart", (e) => { e.preventDefault(); startHold(key); });
+            btn.addEventListener("touchend", stopHold);
+        });
+
+        // Tombol Capit (O = Tutup + Angkat, P = Buka)
+        document.getElementById("btnGripClose").addEventListener("click", () => {
+            publishGripperUI(1.0); // Kirim 1.0
+        });
+        document.getElementById("btnGripOpen").addEventListener("click", () => {
+            publishGripperUI(0.0); // Kirim 0.0
+        });
+
+        // Slider Kecepatan
+        document.getElementById("speedSlider").addEventListener("input", (e) => {
+            speed = parseFloat(e.target.value);
+            document.getElementById("speedValue").innerText = speed.toFixed(1) + " m/s";
+        });
+
+        // === JALANIN ===
+        connect();
+    </script>
+</body>
+</html>

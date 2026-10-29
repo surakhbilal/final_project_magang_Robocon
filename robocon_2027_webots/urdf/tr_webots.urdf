@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<robot name="tr_robot">
+  <webots>
+    <plugin
+      type="robocon_2027_webots.tr_webots_driver.TRWebotsDriver"/>
+  </webots>
+</robot>
