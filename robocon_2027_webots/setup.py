@@ -58,7 +58,14 @@ setup(
             ),
             glob('urdf/*')
         ),
-        ('share/' + package_name + '/worlds', ['worlds/jpeg-removebg-preview.png']),
+        (
+            os.path.join(
+                'share',
+                package_name,
+                'worlds'
+            ),
+            ['worlds/jpeg-removebg-preview.png']
+        ),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -66,22 +73,11 @@ setup(
     maintainer_email='hilaltsabitulazmiarbai@gmail.com',
     description='this package is for robocon 2027 simulation and control',
     license='Apache-2.0',
-    # extras_require={
-    #     'test': [
-    #         'pytest',
-    #     ],
-    # },
-    # entry_points={
-    #     'console_scripts': [
-    #         'controller_node = robocon_2027_controller.controller_node:main',
-    #         'keyboard_teleop = robocon_2027_webots.keyboard_teleop:main',
-    #         'semi_auto_controller = robocon_2027_webots.semi_auto_controller:main',
-    #     ],
-    # },
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'tr_webots_driver = robocon_2027_webots.tr_webots_driver:main',
+            'br_webots_driver = robocon_2027_webots.br_webots_driver:main',
             'keyboard_teleop = robocon_2027_webots.keyboard_teleop:main',
         ],
     },

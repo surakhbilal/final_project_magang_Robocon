@@ -12,7 +12,8 @@ find_package(urdf REQUIRED)
 find_package(robot_state_publisher REQUIRED)
 find_package(rviz2 REQUIRED)
 
-install(DIRECTORY launch rviz urdf
+# Hanya install rviz dan urdf karena folder launch sudah dihapus
+install(DIRECTORY rviz urdf
   DESTINATION share/${PROJECT_NAME}
 )
 

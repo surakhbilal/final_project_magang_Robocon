@@ -19,37 +19,66 @@ def generate_launch_description():
         'simple_arena.wbt'
     )
 
-    robot_description_path = os.path.join(
+    # ============================================================
+    # BACA URDF TR
+    # ============================================================
+    tr_robot_description_path = os.path.join(
         package_directory,
         'urdf',
         'tr_webots.urdf'
     )
 
-    with open(robot_description_path, 'r', encoding='utf-8') as urdf_file:
-        robot_description = urdf_file.read()
+    with open(tr_robot_description_path, 'r', encoding='utf-8') as urdf_file:
+        tr_robot_description = urdf_file.read()
 
+    # ============================================================
+    # BACA URDF BR
+    # ============================================================
+    br_robot_description_path = os.path.join(
+        package_directory,
+        'urdf',
+        'br_webots.urdf'
+    )
+
+    with open(br_robot_description_path, 'r', encoding='utf-8') as urdf_file:
+        br_robot_description = urdf_file.read()
+
+    # ============================================================
+    # WEBOTS LAUNCHER
+    # ============================================================
     webots = WebotsLauncher(
         world=world_path
     )
 
+    # ============================================================
+    # TR WEBOTS CONTROLLER
+    # ============================================================
     tr_webots_controller = WebotsController(
         robot_name='tr_robot',
         parameters=[
             {
-                'robot_description': robot_description
+                'robot_description': tr_robot_description
             }
         ],
         respawn=True,
     )
 
-    tr_driver = Node(
-        package='robocon_2027_webots',
-        executable='tr_webots_driver',
-        namespace='/tr_webots',
-        name='driver',
-        output='screen',
+    # ============================================================
+    # BR WEBOTS CONTROLLER
+    # ============================================================
+    br_webots_controller = WebotsController(
+        robot_name='br_robot',
+        parameters=[
+            {
+                'robot_description': br_robot_description
+            }
+        ],
+        respawn=True,
     )
 
+    # ============================================================
+    # SHUTDOWN HANDLER
+    # ============================================================
     shutdown_handler = (
         launch.actions.RegisterEventHandler(
             event_handler=(
@@ -65,9 +94,12 @@ def generate_launch_description():
         )
     )
 
+    # ============================================================
+    # RETURN LAUNCH DESCRIPTION
+    # ============================================================
     return LaunchDescription([
         webots,
         tr_webots_controller,
-        #tr_driver,
+        br_webots_controller,
         shutdown_handler,
     ])

@@ -49,12 +49,14 @@ public:
         k_open_ = getStructuringElement(MORPH_RECT, Size(3, 3));
         k_excl_ = getStructuringElement(MORPH_RECT, Size(9, 9));
 
+        // UBAH KE TOPIK TR
         sub_img_ = create_subscription<Image>("/tr_robot/camera/image_color", 10, std::bind(&ObjectDetector::img_cb, this, std::placeholders::_1));
-        sub_lidar_ = create_subscription<PointCloud2>("/tr_robot/lidar/point_cloud", 10, std::bind(&ObjectDetector::lidar_cb, this, std::placeholders::_1));
-        pub_ = create_publisher<Image>("/camera/detected", 10);
-        if (debug_) pub_mask_ = create_publisher<Image>("/camera/debug_mask", 10);
+        sub_lidar_ = create_subscription<PointCloud2>("/tr/lidar/point_cloud", 10, std::bind(&ObjectDetector::lidar_cb, this, std::placeholders::_1));
+        
+        pub_ = create_publisher<Image>("/tr/camera/detected", 10);
+        if (debug_) pub_mask_ = create_publisher<Image>("/tr/camera/debug_mask", 10);
 
-        RCLCPP_INFO(get_logger(), "OBJECT DETECTOR V8 (ANTI-SKY, SKYBLOCK/MUSTIKA SEPARATED) STARTED");
+        RCLCPP_INFO(get_logger(), "OBJECT DETECTOR TR V8 (ANTI-SKY, SKYBLOCK/MUSTIKA SEPARATED) STARTED");
     }
 
 private:

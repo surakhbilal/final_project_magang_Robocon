@@ -1,0 +1,339 @@
+#VRML_SIM R2025a utf8
+
+PROTO BRRobot [
+  field SFVec3f translation 0 0.25 0
+  field SFRotation rotation 0 1 0 0
+  field SFString name "br_robot"
+  field SFString controller "<extern>"
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    controller IS controller
+
+    children [
+      # =====================================================
+      # SENSOR ORIENTASI
+      # =====================================================
+      InertialUnit {
+        name "inertial_unit"
+      }
+
+      # =====================================================
+      # LIDAR & KAMERA
+      # =====================================================
+      Pose {
+        translation 0.21 0.04 0.14
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.2 0.819608 0.478431 }
+            geometry Capsule { height 0.1 radius 0.02 }
+          }
+        ]
+      }
+      Lidar {
+        name "lidar"
+        translation 0.21 0.04 0.14
+        numberOfLayers 1
+        minRange 0.1
+        maxRange 5.0
+        horizontalResolution 360
+        fieldOfView 6.28318
+        verticalFieldOfView 0.1
+        noise 0.0
+      }
+
+      Pose {
+        translation 0.21 -0.04 0.14
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.384314 0.627451 0.917647 }
+            geometry Box { size 0.1 0.06 0.06 }
+          }
+        ]
+      }
+      Camera {
+        name "camera"
+        translation 0.21 -0.04 0.14
+        width 640
+        height 480
+        fieldOfView 1.5
+      }
+
+      # =====================================================
+      # CHASSIS
+      # =====================================================
+      Shape {
+        appearance PBRAppearance {
+          baseColor 0.368627 0.360784 0.392157
+          roughness 0.7
+          metalness 0
+        }
+        geometry Box { size 0.6 0.5 0.1 }
+      }
+      
+      # =====================================================
+      # TIANG STATIS
+      # =====================================================
+      Pose {
+        translation 0.01 -0.2 0.46
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.5 0.5 0.5 }
+            geometry Cylinder { height 0.9 radius 0.025 }
+          }
+        ]
+      }
+      Pose {
+        translation 0.01 0.2 0.46
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.5 0.5 0.5 }
+            geometry Cylinder { height 0.9 radius 0.025 }
+          }
+        ]
+      }
+      Pose {
+            translation 0.01 0 0.93
+            rotation 0 0 1 0
+            children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.2 0.3 0.6
+            }
+            geometry Box {
+              size 0.06 0.47 0.04
+            }
+            castShadows TRUE
+            isPickable TRUE
+          }
+        ]
+      }
+
+      # =====================================================
+      # SLIDER JOINT (Mengangkat Palang & Capit)
+      # =====================================================
+      SliderJoint {
+        jointParameters JointParameters {
+          axis 0 0 1
+          minStop 0.0
+          maxStop 0.0
+          dampingConstant 0.5
+          staticFriction 1.0
+        }
+        device [
+          LinearMotor {
+            name "z_axis_motor"
+            maxForce 100.0
+            maxVelocity 0.5
+          }
+          PositionSensor {
+            name "z_axis_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.01 0 0.08
+          children [
+            
+            # 1. Palang Penyangga
+            Pose {
+              translation 0 0 0
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.2 0.3 0.6 }
+                  geometry Box { size 0.05 0.46 0.06 }
+                }
+              ]
+            }
+            
+            # =====================================================
+            # CAPIT KIRI (BENTUK BERTINGKAT)
+            # =====================================================
+            HingeJoint {
+              jointParameters HingeJointParameters { 
+                anchor 0 0.22 0 
+                axis 0 0 -2 
+                dampingConstant 0.5 
+                staticFriction 1.0 
+              }
+              device [ 
+                RotationalMotor { name "gripper_left_motor" maxTorque 50.0 } 
+                PositionSensor { name "gripper_left_sensor" } 
+              ]
+              endPoint Solid {
+                translation 0 0.22 0
+                children [ 
+                  # 1. Batang Kecil (Pangkal)
+                  Pose {
+                    translation 0.15 0 0
+                    children [
+                      Shape { 
+                        appearance PBRAppearance { baseColor 0.2 0.4 0.8 } 
+                        geometry Box { size 0.3 0.02 0.04 } 
+                      } 
+                    ]
+                  }
+                  # 2. Batang Besar (Ujung Penjepit)
+                  Pose {
+                    translation 0.45 0 0
+                    children [
+                      Shape { 
+                        appearance PBRAppearance { baseColor 0.1 0.25 0.6 } 
+                        geometry Box { size 0.3 0.04 0.13 } 
+                      } 
+                    ]
+                  }
+                ]
+                name "gripper_left_solid"
+                contactMaterial "gripper_material"
+                # Bounding Object disatukan
+                boundingObject Group {
+                  children [
+                    Pose { translation 0.15 0 0 children [ Box { size 0.3 0.02 0.04 } ] }
+                    Pose { translation 0.45 0 0 children [ Box { size 0.3 0.04 0.13 } ] }
+                  ]
+                }
+                physics Physics { density -1 mass 0.1 }
+              }
+            }
+            
+            # =====================================================
+            # CAPIT KANAN (BENTUK BERTINGKAT)
+            # =====================================================
+            HingeJoint {
+              jointParameters HingeJointParameters { 
+                anchor 0 -0.22 0 
+                axis 0 0 -2
+                dampingConstant 0.5 
+                staticFriction 1.0 
+              }
+              device [ 
+                RotationalMotor { name "gripper_right_motor" maxTorque 50.0 } 
+                PositionSensor { name "gripper_right_sensor" } 
+              ]
+              endPoint Solid {
+                translation 0 -0.22 0
+                children [ 
+                  # 1. Batang Kecil (Pangkal)
+                  Pose {
+                    translation 0.15 0 0
+                    children [
+                      Shape { 
+                        appearance PBRAppearance { baseColor 0.2 0.4 0.8 } 
+                        geometry Box { size 0.3 0.02 0.04 } 
+                      } 
+                    ]
+                  }
+                  # 2. Batang Besar (Ujung Penjepit)
+                  Pose {
+                    translation 0.45 0 0
+                    children [
+                      Shape { 
+                        appearance PBRAppearance { baseColor 0.1 0.25 0.6 } 
+                        geometry Box { size 0.3 0.04 0.13 } 
+                      } 
+                    ]
+                  }
+                ]
+                name "gripper_right_solid"
+                contactMaterial "gripper_material"
+                # Bounding Object disatukan
+                boundingObject Group {
+                  children [
+                    Pose { translation 0.15 0 0 children [ Box { size 0.3 0.02 0.04 } ] }
+                    Pose { translation 0.45 0 0 children [ Box { size 0.3 0.04 0.13 } ] }
+                  ]
+                }
+                physics Physics { density -1 mass 0.1 }
+              }
+            }
+          ]
+          
+          name "z_axis_solid"
+          contactMaterial "gripper_material"
+          
+          boundingObject Pose { 
+            translation 0 0 0 
+            children [ Box { size 0.05 0.45 0.04 } ] 
+          }
+          physics Physics { density -1 mass 0.5 }
+        }
+      }
+
+      # =====================================================
+      # FRONT LEFT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters { anchor 0.18 0.285 0.0 axis 0 1 0 dampingConstant 0.01 staticFriction 0 }
+        device [ RotationalMotor { name "front_left_wheel_motor" maxVelocity 30 maxTorque 15 } PositionSensor { name "front_left_wheel_sensor" } ]
+        endPoint Solid {
+          translation 0.18 0.285 0.0
+          rotation 1 0 0 1.5708
+          children [ Shape { appearance PBRAppearance { baseColor 0.03 0.03 0.03 roughness 1 metalness 0 } geometry DEF MECANUM_WHEEL_GEOMETRY Cylinder { radius 0.10 height 0.06 subdivision 24 } } ]
+          name "front_left_wheel"
+          contactMaterial "mecanum_left_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics { density -1 mass 0.40 }
+        }
+      }
+
+      # =====================================================
+      # FRONT RIGHT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters { anchor 0.18 -0.285 0.0 axis 0 1 0 dampingConstant 0.01 staticFriction 0 }
+        device [ RotationalMotor { name "front_right_wheel_motor" maxVelocity 30 maxTorque 15 } PositionSensor { name "front_right_wheel_sensor" } ]
+        endPoint Solid {
+          translation 0.18 -0.285 0.0
+          rotation 1 0 0 1.5708
+          children [ Shape { appearance PBRAppearance { baseColor 0.03 0.03 0.03 roughness 1 metalness 0 } geometry USE MECANUM_WHEEL_GEOMETRY } ]
+          name "front_right_wheel"
+          contactMaterial "mecanum_right_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics { density -1 mass 0.40 }
+        }
+      }
+
+      # =====================================================
+      # REAR LEFT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters { anchor -0.18 0.285 0.0 axis 0 1 0 dampingConstant 0.01 staticFriction 0 }
+        device [ RotationalMotor { name "rear_left_wheel_motor" maxVelocity 30 maxTorque 15 } PositionSensor { name "rear_left_wheel_sensor" } ]
+        endPoint Solid {
+          translation -0.18 0.285 0.0
+          rotation 1 0 0 1.5708
+          children [ Shape { appearance PBRAppearance { baseColor 0.03 0.03 0.03 roughness 1 metalness 0 } geometry USE MECANUM_WHEEL_GEOMETRY } ]
+          name "rear_left_wheel"
+          contactMaterial "mecanum_right_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics { density -1 mass 0.40 }
+        }
+      }
+
+      # =====================================================
+      # REAR RIGHT
+      # =====================================================
+      HingeJoint {
+        jointParameters HingeJointParameters { anchor -0.18 -0.285 0.0 axis 0 1 0 dampingConstant 0.01 staticFriction 0 }
+        device [ RotationalMotor { name "rear_right_wheel_motor" maxVelocity 30 maxTorque 15 } PositionSensor { name "rear_right_wheel_sensor" } ]
+        endPoint Solid {
+          translation -0.18 -0.285 0.0
+          rotation 1 0 0 1.5708
+          children [ Shape { appearance PBRAppearance { baseColor 0.03 0.03 0.03 roughness 1 metalness 0 } geometry USE MECANUM_WHEEL_GEOMETRY } ]
+          name "rear_right_wheel"
+          contactMaterial "mecanum_left_diagonal"
+          boundingObject USE MECANUM_WHEEL_GEOMETRY
+          physics Physics { density -1 mass 0.40 }
+        }
+      }
+    ]
+
+    name IS name
+    contactMaterial "robot_chassis"
+    boundingObject Box { size 0.6 0.5 0.1 }
+    physics Physics { density -1 mass 12 centerOfMass [ 0 0 -0.02 ] }
+  }
+}

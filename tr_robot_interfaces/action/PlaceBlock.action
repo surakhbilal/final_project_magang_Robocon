@@ -1,0 +1,12 @@
+# Goal
+string phase
+float64 target_x
+float64 target_y
+---
+# Result
+bool success
+string message
+---
+# Feedback
+string current_state
+float64 progress

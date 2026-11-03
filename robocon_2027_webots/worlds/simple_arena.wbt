@@ -6,6 +6,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/solids/protos/SolidBox.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/appearances/protos/Parquetry.proto"
 EXTERNPROTO "../protos/TRRobot.proto"
+EXTERNPROTO "../protos/BRRobot.proto"
 
 WorldInfo {
   basicTimeStep 16
@@ -45,14 +46,20 @@ WorldInfo {
   ]
 }
 TRRobot {
-  translation -4.5 -4.5 2
-  rotation 0 1 0 0
+  translation -5.11387618246273 -5.037067031957885 0.0985422241917812
+  rotation -0.00047550905086953573 0.0009125766867240627 0.9999994705473266 1.5732795521005527
   name "tr_robot"
   controller "<extern>"
 }
+BRRobot {
+  translation -4.244654523698814 -5.021177707306181 0.09854222434624277
+  rotation -0.002455399554223019 0.0013712366738208607 0.9999960453536872 1.5729831078735612
+  name "br_robot"
+  controller "<extern>"
+}
 Viewpoint {
-  orientation 0.1679920258722947 -0.3595909263023948 -0.9178633040732743 5.341554659008032
-  position -13.802743681914501 -20.02894904862081 7.8836842424717455
+  orientation -0.007949165808825704 -0.9998525063940026 0.01522419851995147 5.321015162597759
+  position -16.123248636993317 -2.1298144271012123 20.274058158203733
 }
 SolidBox {
   translation 1.5 0 0.3
@@ -804,7 +811,22 @@ SolidBox {
   }
 }
 SolidBox {
-  translation -0.007898659992847999 -4.2334800052872605 0.09980379999999996
+  translation -4.0747945401311085 5 0.1748038
+  name "Earth_block_red2"
+  size 0.35 0.35 0.35
+  contactMaterial "game_piece"
+  appearance PBRAppearance {
+    baseColor 0.85 0.1 0.1
+    roughness 0.6
+    metalness 0
+  }
+  physics Physics {
+    density -1
+    mass 1.0
+  }
+}
+SolidBox {
+  translation 0.0037301900261766142 -4.232030003041032 0.09980380000000001
   name "Sky block"
   size 0.20 0.20 0.20
   contactMaterial "game_piece"

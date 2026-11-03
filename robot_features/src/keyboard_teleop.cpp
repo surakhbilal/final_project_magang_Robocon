@@ -14,18 +14,19 @@ using namespace std::chrono_literals;
 class KeyboardTeleop : public rclcpp::Node {
 public:
     KeyboardTeleop() : Node("keyboard_teleop_cpp"), robot_yaw_(0.0), last_key_time_(this->now()) {
-        pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+        // UBAH KE TOPIK TR
+        pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/tr/cmd_vel", 10);
         
         sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "/odom", 10, std::bind(&KeyboardTeleop::odom_callback, this, std::placeholders::_1));
+            "/tr/odom", 10, std::bind(&KeyboardTeleop::odom_callback, this, std::placeholders::_1));
         
-        // --- TAMBAHAN PUBLISHER GRIPPER ---
-        gripper_pub_ = this->create_publisher<std_msgs::msg::Float64>("/gripper_cmd", 10);
-        tip_pub_ = this->create_publisher<std_msgs::msg::Float64>("/gripper_tip_cmd", 10);
+        // UBAH KE TOPIK TR
+        gripper_pub_ = this->create_publisher<std_msgs::msg::Float64>("/tr/gripper_cmd", 10);
+        tip_pub_ = this->create_publisher<std_msgs::msg::Float64>("/tr/gripper_tip_cmd", 10);
 
         timer_ = this->create_wall_timer(50ms, std::bind(&KeyboardTeleop::control_loop, this));
         
-        RCLCPP_INFO(this->get_logger(), "=== Controller connected ===");
+        RCLCPP_INFO(this->get_logger(), "=== TR Controller connected ===");
         RCLCPP_INFO(this->get_logger(), "WASD = Gerak, Q/E = Muter");
         RCLCPP_INFO(this->get_logger(), "O = Nyapit, P = Lepas");
     }

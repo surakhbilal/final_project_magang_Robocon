@@ -1,0 +1,428 @@
+<?xml version="1.0"?>
+
+<robot
+  xmlns:xacro="http://www.ros.org/wiki/xacro"
+  name="br_robot">
+
+  <!-- ==================================================== -->
+  <!-- Parameter chassis                                    -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="base_length" value="0.60"/>
+  <xacro:property name="base_width" value="0.50"/>
+  <xacro:property name="base_height" value="0.1"/>
+  <xacro:property name="base_mass" value="12.0"/>
+
+  <!-- ==================================================== -->
+  <!-- Parameter roda mecanum -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="wheel_radius" value="0.10"/>
+  <xacro:property name="wheel_width" value="0.06"/>
+  <xacro:property name="wheel_mass" value="0.40"/>
+
+  <xacro:property name="wheel_x" value="0.18"/>
+  <xacro:property name="wheel_y" value="0.285"/>
+
+  <xacro:property name="ground_clearance" value="0.10"/>
+
+  <xacro:property
+    name="base_center_z"
+    value="${ground_clearance + base_height / 2.0}"/>
+
+  <xacro:property
+    name="wheel_center_z"
+    value="${ground_clearance - wheel_radius}"/>
+
+  <!-- ==================================================== -->
+  <!-- Parameter visual roller -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="roller_radius" value="0.012"/>
+  <xacro:property name="roller_length" value="0.070"/>
+
+  <!-- ==================================================== -->
+  <!-- Parameter tiang & slider                             -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="pillar_radius" value="0.025"/>
+  <xacro:property name="pillar_height" value="0.9"/>
+  <xacro:property name="pillar_y"      value="0.20"/>
+  <xacro:property name="pillar_z"      value="0.46"/>
+
+  <xacro:property name="slider_max_z"  value="0.8"/>
+  <xacro:property name="slider_base_z" value="0.08"/>
+
+  <!-- ==================================================== -->
+  <!-- Parameter gripper bertingkat                         -->
+  <!-- ==================================================== -->
+
+  <xacro:property name="gripper_anchor_y" value="0.22"/>
+  <xacro:property name="gripper_mass"     value="0.1"/>
+
+  <!-- ==================================================== -->
+  <!-- Material visual                                      -->
+  <!-- ==================================================== -->
+
+  <material name="br_blue">
+    <color rgba="0.10 0.25 0.80 1.0"/>
+  </material>
+
+  <material name="br_steel">
+    <color rgba="0.50 0.50 0.50 1.0"/>
+  </material>
+
+  <material name="br_dark_blue">
+    <color rgba="0.10 0.25 0.60 1.0"/>
+  </material>
+
+  <material name="wheel_black">
+    <color rgba="0.03 0.03 0.03 1.0"/>
+  </material>
+
+  <material name="roller_gray">
+    <color rgba="0.30 0.30 0.30 1.0"/>
+  </material>
+
+  <!-- ==================================================== -->
+  <!-- Root frame                                            -->
+  <!-- ==================================================== -->
+
+  <link name="base_footprint"/>
+
+  <!-- ==================================================== -->
+  <!-- base_link                                             -->
+  <!-- ==================================================== -->
+
+  <link name="base_link">
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+      <material name="br_blue"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}"/>
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${base_mass}"/>
+      <inertia
+        ixx="${base_mass * (base_width * base_width
+              + base_height * base_height) / 12.0}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${base_mass * (base_length * base_length
+              + base_height * base_height) / 12.0}"
+        iyz="0.0"
+        izz="${base_mass * (base_length * base_length
+              + base_width * base_width) / 12.0}"/>
+    </inertial>
+
+  </link>
+
+  <joint
+    name="base_footprint_to_base_link"
+    type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${base_center_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ==================================================== -->
+  <!-- Tiang statis kiri & kanan                             -->
+  <!-- ==================================================== -->
+
+  <link name="pillar_left_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${pillar_radius}" length="${pillar_height}"/>
+      </geometry>
+      <material name="br_steel"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${pillar_radius}" length="${pillar_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="pillar_left_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="pillar_left_link"/>
+    <origin xyz="0.01 ${pillar_y} ${pillar_z}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="pillar_right_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${pillar_radius}" length="${pillar_height}"/>
+      </geometry>
+      <material name="br_steel"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="${pillar_radius}" length="${pillar_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+  </link>
+
+  <joint name="pillar_right_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="pillar_right_link"/>
+    <origin xyz="0.01 ${-pillar_y} ${pillar_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ==================================================== -->
+  <!-- Slider / Z-axis (palang yang bergerak naik-turun)     -->
+  <!-- ==================================================== -->
+
+  <link name="z_axis_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.46 0.06"/>
+      </geometry>
+      <material name="br_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.46 0.06"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.5"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="z_axis_joint" type="prismatic">
+    <parent link="base_link"/>
+    <child link="z_axis_link"/>
+    <origin xyz="0.01 0 ${slider_base_z}" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="0.0" upper="${slider_max_z}" effort="100.0" velocity="0.5"/>
+  </joint>
+
+  <!-- ==================================================== -->
+  <!-- Gripper kiri (bertingkat)                             -->
+  <!-- ==================================================== -->
+
+  <link name="gripper_left_link">
+    <!-- Batang pangkal -->
+    <visual>
+      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.30 0.02 0.04"/>
+      </geometry>
+      <material name="br_blue"/>
+    </visual>
+    <!-- Batang ujung penjepit -->
+    <visual>
+      <origin xyz="0.45 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.30 0.04 0.13"/>
+      </geometry>
+      <material name="br_dark_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.30 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.60 0.04 0.13"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.30 0 0" rpy="0 0 0"/>
+      <mass value="${gripper_mass}"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="gripper_left_joint" type="revolute">
+    <parent link="z_axis_link"/>
+    <child link="gripper_left_link"/>
+    <origin xyz="0 ${gripper_anchor_y} 0" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-1.0" upper="1.0" effort="50.0" velocity="1.0"/>
+    <dynamics damping="0.5" friction="1.0"/>
+  </joint>
+
+  <!-- ==================================================== -->
+  <!-- Gripper kanan (bertingkat)                            -->
+  <!-- ==================================================== -->
+
+  <link name="gripper_right_link">
+    <visual>
+      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.30 0.02 0.04"/>
+      </geometry>
+      <material name="br_blue"/>
+    </visual>
+    <visual>
+      <origin xyz="0.45 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.30 0.04 0.13"/>
+      </geometry>
+      <material name="br_dark_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="0.30 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.60 0.04 0.13"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.30 0 0" rpy="0 0 0"/>
+      <mass value="${gripper_mass}"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <joint name="gripper_right_joint" type="revolute">
+    <parent link="z_axis_link"/>
+    <child link="gripper_right_link"/>
+    <origin xyz="0 ${-gripper_anchor_y} 0" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-1.0" upper="1.0" effort="50.0" velocity="1.0"/>
+    <dynamics damping="0.5" friction="1.0"/>
+  </joint>
+
+  <!-- ==================================================== -->
+  <!-- Inertia cylinder roda                                 -->
+  <!-- ==================================================== -->
+
+  <xacro:macro
+    name="mecanum_wheel_inertia"
+    params="mass radius width">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+      <inertia
+        ixx="${1.0 / 12.0 * mass * (3.0 * radius * radius + width * width)}"
+        ixy="0.0"
+        ixz="0.0"
+        iyy="${1.0 / 2.0 * mass * radius * radius}"
+        iyz="0.0"
+        izz="${1.0 / 12.0 * mass * (3.0 * radius * radius + width * width)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro
+    name="roller_visual"
+    params="x z roller_sign">
+    <visual>
+      <origin
+        xyz="${x} 0 ${z}"
+        rpy="${pi / 2} ${roller_sign * 1.5708/2} 0"/>
+      <geometry>
+        <cylinder
+          radius="${roller_radius}"
+          length="${roller_length}"/>
+      </geometry>
+      <material name="roller_gray"/>
+    </visual>
+  </xacro:macro>
+
+  <xacro:macro
+    name="mecanum_wheel"
+    params="prefix x y z roller_sign">
+
+    <link name="${prefix}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="wheel_black"/>
+      </visual>
+
+      <xacro:roller_visual x="0.07"  z="0.07"  roller_sign="${roller_sign}"/>
+      <xacro:roller_visual x="-0.07" z="0.07"  roller_sign="${roller_sign}"/>
+      <xacro:roller_visual x="0.07"  z="-0.07" roller_sign="${roller_sign}"/>
+      <xacro:roller_visual x="-0.07" z="-0.07" roller_sign="${roller_sign}"/>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+
+      <xacro:mecanum_wheel_inertia
+        mass="${wheel_mass}"
+        radius="${wheel_radius}"
+        width="${wheel_width}"/>
+    </link>
+
+    <joint name="${prefix}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${prefix}_wheel_link"/>
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+      <dynamics damping="0.01" friction="0.0"/>
+    </joint>
+
+  </xacro:macro>
+
+  <!-- ==================================================== -->
+  <!-- Susunan mecanum pola X                                -->
+  <!-- ==================================================== -->
+
+  <xacro:mecanum_wheel
+    prefix="front_left"
+    x="${wheel_x}"
+    y="${wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="-1"/>
+
+  <xacro:mecanum_wheel
+    prefix="front_right"
+    x="${wheel_x}"
+    y="${-wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="1"/>
+
+  <xacro:mecanum_wheel
+    prefix="rear_left"
+    x="${-wheel_x}"
+    y="${wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="1"/>
+
+  <xacro:mecanum_wheel
+    prefix="rear_right"
+    x="${-wheel_x}"
+    y="${-wheel_y}"
+    z="${wheel_center_z}"
+    roller_sign="-1"/>
+
+</robot>

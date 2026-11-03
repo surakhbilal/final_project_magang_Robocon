@@ -1,16 +1,18 @@
 import math
 import time
+import struct
 import rclpy
 
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import JointState, Range, PointCloud2
+from sensor_msgs.msg import JointState, Range, PointCloud2, PointField
+from visualization_msgs.msg import Marker, MarkerArray
 from tf2_ros import TransformBroadcaster
 from std_msgs.msg import Float64
 
 
 class TRWebotsDriver:
-    """ROS 2 driver untuk TR mecanum robot (Versi Stabil + Gripper & Tip + Lidar)."""
+    """ROS 2 driver untuk TR mecanum robot (Versi Stabil + Gripper & Tip + Lidar + Visual Marker)."""
 
     def __init__(self):
         self._node = None
@@ -55,6 +57,9 @@ class TRWebotsDriver:
         self._lidar_pub = None
         self._range_pub = None
 
+        # STATE MARKER (Visualisasi 3D untuk Foxglove)
+        self._marker_pub = None
+
         # STATE GRIPPER & TIP
         self._grip_left_motor = None
         self._grip_right_motor = None
@@ -63,6 +68,14 @@ class TRWebotsDriver:
         
         self._gripper_sub = None
         self._tip_sub = None
+
+        # Status Gripper & Tip (0.0 tutup, 1.0 buka)
+        self._grip_state = 0.0
+        self._tip_state = 0.0
+
+        # PARAMETER KALIBRASI ARAH LIDAR
+        self._lidar_mirror = False
+        self._lidar_yaw_offset = 0.0
 
     def init(self, webots_node, properties):
         print('[TR DRIVER] init() dimulai', flush=True)
@@ -135,23 +148,26 @@ class TRWebotsDriver:
         
         # 6. Subscribers
         self._cmd_vel_subscription = self._node.create_subscription(
-            Twist, '/cmd_vel', self._cmd_vel_callback, 10)
+            Twist, '/tr/cmd_vel', self._cmd_vel_callback, 10)
             
         self._gripper_sub = self._node.create_subscription(
-            Float64, '/gripper_cmd', self._gripper_callback, 10)
+            Float64, '/tr/gripper_cmd', self._gripper_callback, 10)
             
         self._tip_sub = self._node.create_subscription(
-            Float64, '/gripper_tip_cmd', self._tip_callback, 10)
+            Float64, '/tr/gripper_tip_cmd', self._tip_callback, 10)
 
         # 7. Publishers
-        self._joint_state_publisher = self._node.create_publisher(JointState, '/joint_states', 10)
-        self._odom_publisher = self._node.create_publisher(Odometry, '/odom', 10)
+        self._joint_state_publisher = self._node.create_publisher(JointState, '/tr/joint_states', 10)
+        self._odom_publisher = self._node.create_publisher(Odometry, '/tr/odom', 10)
         
-        # Publisher untuk Lidar (PointCloud2)
-        self._lidar_pub = self._node.create_publisher(PointCloud2, '/tr_robot/lidar/point_cloud', 10)
+        # Publisher untuk Lidar
+        self._lidar_pub = self._node.create_publisher(PointCloud2, '/tr/lidar/point_cloud', 10)
         
-        # Publisher untuk Range (Buat di-plot 2D)
-        self._range_pub = self._node.create_publisher(Range, '/range_sensor/range', 10)
+        # Publisher untuk Range
+        self._range_pub = self._node.create_publisher(Range, '/tr/range_sensor/range', 10)
+
+        # Publisher untuk Visualisasi 3D (MarkerArray)
+        self._marker_pub = self._node.create_publisher(MarkerArray, '/tr/robot_markers', 10)
 
         self._tf_broadcaster = TransformBroadcaster(self._node)
         self._node.get_logger().info('TR driver aktif (Siap menerima perintah Gripper & Tip)')
@@ -162,6 +178,7 @@ class TRWebotsDriver:
             target_angle = msg.data * 0.6 
             self._grip_left_motor.setPosition(target_angle)
             self._grip_right_motor.setPosition(-target_angle)
+            self._grip_state = msg.data  # Simpan state untuk Marker
             self._node.get_logger().info(f'Gripper Utama: {target_angle}')
         else:
             self._node.get_logger().error('Gagal gerakin Gripper: Motor gak ketemu!')
@@ -172,12 +189,13 @@ class TRWebotsDriver:
             target_angle = msg.data
             self._grip_tip_left.setPosition(target_angle)
             self._grip_tip_right.setPosition(-target_angle)
+            self._tip_state = msg.data    # Simpan state untuk Marker
             self._node.get_logger().info(f'Tip Hook: {target_angle}')
         else:
             self._node.get_logger().error('Gagal gerakin Tip: Motor gak ketemu!')
 
     # ====================================================
-    # LOGIKA RODA & ODOMETRI (TIDAK DIUBAH SAMA SEKALI)
+    # LOGIKA RODA & ODOMETRI
     # ====================================================
 
     def _normalize_wheel_speeds(self, fl, fr, rl, rr):
@@ -222,35 +240,235 @@ class TRWebotsDriver:
     def _publish_joint_states(self, stamp, angles, velocities):
         msg = JointState()
         msg.header.stamp = stamp
-        msg.name = [self._wheel_joint_names[key] for key in ('fl', 'fr', 'rl', 'rr')]
-        msg.position = [angles[key] for key in ('fl', 'fr', 'rl', 'rr')]
-        msg.velocity = [velocities[key] for key in ('fl', 'fr', 'rl', 'rr')]
+        
+        msg.name = [
+            self._wheel_joint_names['fl'], 
+            self._wheel_joint_names['fr'], 
+            self._wheel_joint_names['rl'], 
+            self._wheel_joint_names['rr'],
+            'gripper_left_joint',
+            'gripper_right_joint'
+        ]
+        
+        msg.position = [
+            angles['fl'], angles['fr'], angles['rl'], angles['rr'],
+            0.0, 0.0
+        ]
+        
+        msg.velocity = [
+            velocities['fl'], velocities['fr'], velocities['rl'], velocities['rr'],
+            0.0, 0.0
+        ]
+        
         self._joint_state_publisher.publish(msg)
 
-    def _publish_rangefinder(self, stamp):
-        if self._range_sensor is not None:
-            range_image = self._range_sensor.getRangeImage()
-            
-            if range_image is not None and len(range_image) > 0:
-                center_idx = len(range_image) // 2
-                min_dist = 5.0
-                
-                for i in range(center_idx - 15, center_idx + 15):
-                    if 0 <= i < len(range_image):
-                        d = range_image[i]
-                        if not math.isnan(d) and not math.isinf(d) and d > 0.1:
-                            if d < min_dist:
-                                min_dist = d
-                
-                msg = Range()
-                msg.header.stamp = stamp
-                msg.header.frame_id = 'lidar'
-                msg.radiation_type = 0
-                msg.field_of_view = 0.5
-                msg.min_range = 0.1
-                msg.max_range = 5.0 
-                msg.range = min_dist
-                self._range_pub.publish(msg)
+    # ====================================================
+    # LOGIKA VISUAL MARKER UNTUK FOXGLOVE (DIRAPIKAN)
+    # ====================================================
+    def _make_marker(self, stamp, marker_id, marker_type, pos, scale, color,
+                     quat=(0.0, 0.0, 0.0, 1.0)):
+        """Helper pembuat marker supaya kode visual lebih ringkas & konsisten."""
+        m = Marker()
+        m.header.frame_id = 'tr/base_footprint'
+        m.header.stamp = stamp
+        m.ns = 'robot_visual'
+        m.id = marker_id
+        m.type = marker_type
+        m.action = Marker.ADD
+        m.pose.position.x = float(pos[0])
+        m.pose.position.y = float(pos[1])
+        m.pose.position.z = float(pos[2])
+        m.pose.orientation.x = float(quat[0])
+        m.pose.orientation.y = float(quat[1])
+        m.pose.orientation.z = float(quat[2])
+        m.pose.orientation.w = float(quat[3])
+        m.scale.x = float(scale[0])
+        m.scale.y = float(scale[1])
+        m.scale.z = float(scale[2])
+        m.color.r = float(color[0])
+        m.color.g = float(color[1])
+        m.color.b = float(color[2])
+        m.color.a = float(color[3])
+        return m
+
+    def _publish_markers(self, stamp):
+        if self._marker_pub is None:
+            return
+
+        markers = []
+
+        # ---- Dimensi (mengikuti parameter kinematika driver agar konsisten) ----
+        r = self._wheel_radius            # jari-jari roda = tinggi sumbu roda dari lantai
+        wx = self._half_wheelbase         # jarak roda depan/belakang dari pusat (sumbu X)
+        wy = self._half_track_width       # jarak roda kiri/kanan dari pusat (sumbu Y)
+        wheel_width = 0.06
+
+        chassis_len = 0.52
+        chassis_wid = 0.50
+        chassis_h = 0.10
+        chassis_z = r + chassis_h / 2.0   # dasar chassis sejajar sumbu roda (z = 0.15)
+
+        # Warna
+        c_body = (0.10, 0.25, 0.80, 1.0)
+        c_deck = (0.07, 0.17, 0.60, 1.0)
+        c_tire = (0.05, 0.05, 0.05, 1.0)
+        c_hub = (0.70, 0.70, 0.72, 1.0)
+        c_front = (1.00, 0.80, 0.10, 1.0)
+        c_grip = (0.95, 0.50, 0.10, 1.0)
+
+        # 1. Chassis + plat atas
+        markers.append(self._make_marker(
+            stamp, 0, Marker.CUBE,
+            (0.0, 0.0, chassis_z),
+            (chassis_len, chassis_wid, chassis_h), c_body))
+
+        markers.append(self._make_marker(
+            stamp, 1, Marker.CUBE,
+            (0.0, 0.0, r + chassis_h + 0.005),
+            (chassis_len - 0.06, chassis_wid - 0.06, 0.01), c_deck))
+
+        # 2. Penanda depan robot (strip kuning di bumper depan)
+        markers.append(self._make_marker(
+            stamp, 2, Marker.CUBE,
+            (chassis_len / 2.0 + 0.005, 0.0, chassis_z + 0.02),
+            (0.01, chassis_wid, 0.04), c_front))
+
+        # 3. Roda: sumbu silinder harus sejajar sumbu Y (putar 90 derajat terhadap X)
+        #    dan pusatnya setinggi jari-jari roda supaya menapak tepat di lantai.
+        s45 = math.sqrt(0.5)
+        wheel_quat = (s45, 0.0, 0.0, s45)  # quaternion ternormalisasi (90 derajat pada sumbu X)
+
+        wheel_layout = [
+            (10, 11, +wx, +wy),   # FL
+            (12, 13, +wx, -wy),   # FR
+            (14, 15, -wx, +wy),   # RL
+            (16, 17, -wx, -wy),   # RR
+        ]
+        for tire_id, hub_id, px, py in wheel_layout:
+            # Ban
+            markers.append(self._make_marker(
+                stamp, tire_id, Marker.CYLINDER,
+                (px, py, r),
+                (2.0 * r, 2.0 * r, wheel_width), c_tire, wheel_quat))
+            # Hub abu-abu (sedikit lebih lebar supaya terlihat di kedua sisi ban)
+            markers.append(self._make_marker(
+                stamp, hub_id, Marker.CYLINDER,
+                (px, py, r),
+                (0.10, 0.10, wheel_width + 0.008), c_hub, wheel_quat))
+
+        # 4. Gripper Kiri & Kanan (posisi sama seperti sebelumnya, warna dibedakan)
+        markers.append(self._make_marker(
+            stamp, 20, Marker.CUBE,
+            (0.30, 0.19, 0.11),
+            (0.25, 0.02, 0.02), c_grip))
+        markers.append(self._make_marker(
+            stamp, 21, Marker.CUBE,
+            (0.30, -0.19, 0.11),
+            (0.25, 0.02, 0.02), c_grip))
+
+        marker_array = MarkerArray()
+        # Hapus marker lama (id 0-6 dari versi sebelumnya) supaya tidak muncul ganda
+        clear = Marker()
+        clear.header.frame_id = 'tr/base_footprint'
+        clear.header.stamp = stamp
+        clear.ns = 'robot_visual'
+        clear.action = Marker.DELETEALL
+        marker_array.markers.append(clear)
+        marker_array.markers.extend(markers)
+
+        self._marker_pub.publish(marker_array)
+
+    # ====================================================
+    # LOGIKA LIDAR
+    # ====================================================
+
+    @staticmethod
+    def _wrap_angle(a):
+        return math.atan2(math.sin(a), math.cos(a))
+
+    def _lidar_ray_angle(self, col, hres, fov):
+        if fov < (2.0 * math.pi - 1e-3) and hres > 1:
+            step = fov / (hres - 1)
+        else:
+            step = fov / hres
+        angle = (fov / 2.0) - col * step
+        if self._lidar_mirror:
+            angle = -angle
+        return self._wrap_angle(angle + self._lidar_yaw_offset)
+
+    def _publish_lidar(self, stamp):
+        if self._range_sensor is None:
+            return
+
+        range_image = self._range_sensor.getRangeImage()
+        if range_image is None or len(range_image) == 0:
+            return
+
+        hres = self._range_sensor.getHorizontalResolution()
+        fov = self._range_sensor.getFov()
+        if hres <= 0:
+            hres = len(range_image)
+        if fov <= 0.0:
+            fov = 2.0 * math.pi
+
+        max_range = 5.0
+        min_range = 0.1
+
+        # 1. Publish sebagai Range
+        front_half_angle = 0.25
+        min_dist = max_range
+        for i, d in enumerate(range_image):
+            if math.isnan(d) or math.isinf(d) or d <= min_range:
+                continue
+            col = i % hres
+            angle = self._lidar_ray_angle(col, hres, fov)
+            if abs(angle) <= front_half_angle and d < min_dist:
+                min_dist = d
+
+        msg_range = Range()
+        msg_range.header.stamp = stamp
+        msg_range.header.frame_id = 'tr/lidar'
+        msg_range.radiation_type = 0
+        msg_range.field_of_view = 0.5
+        msg_range.min_range = min_range
+        msg_range.max_range = max_range
+        msg_range.range = min_dist
+        self._range_pub.publish(msg_range)
+
+        # 2. Publish sebagai PointCloud2
+        points = []
+        for i, r in enumerate(range_image):
+            if math.isnan(r) or math.isinf(r) or r <= min_range or r >= max_range:
+                continue
+            col = i % hres
+            angle = self._lidar_ray_angle(col, hres, fov)
+            x = r * math.cos(angle)
+            y = r * math.sin(angle)
+            z = 0.0
+            points.append((x, y, z))
+
+        if points:
+            msg_pc = PointCloud2()
+            msg_pc.header.stamp = stamp
+            msg_pc.header.frame_id = 'tr/lidar'
+            msg_pc.height = 1
+            msg_pc.width = len(points)
+            msg_pc.fields = [
+                PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
+                PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+                PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
+            ]
+            msg_pc.is_bigendian = False
+            msg_pc.point_step = 12
+            msg_pc.row_step = msg_pc.point_step * msg_pc.width
+            msg_pc.is_dense = True
+
+            buffer = []
+            for p in points:
+                buffer.extend(p)
+            msg_pc.data = struct.pack('f' * len(buffer), *buffer)
+
+            self._lidar_pub.publish(msg_pc)
 
     def _update_odometry(self, stamp, velocities):
         dt = self._timestep_sec
@@ -278,8 +496,8 @@ class TRWebotsDriver:
 
         odom = Odometry()
         odom.header.stamp = stamp
-        odom.header.frame_id = 'odom'
-        odom.child_frame_id = 'base_footprint'
+        odom.header.frame_id = 'tr/odom'
+        odom.child_frame_id = 'tr/base_footprint'
         odom.pose.pose.position.x = self._x
         odom.pose.pose.position.y = self._y
         odom.pose.pose.orientation.z = quat_z
@@ -291,8 +509,8 @@ class TRWebotsDriver:
 
         tf = TransformStamped()
         tf.header.stamp = stamp
-        tf.header.frame_id = 'odom'
-        tf.child_frame_id = 'base_footprint'
+        tf.header.frame_id = 'tr/odom'
+        tf.child_frame_id = 'tr/base_footprint'
         tf.transform.translation.x = self._x
         tf.transform.translation.y = self._y
         tf.transform.rotation.z = quat_z
@@ -313,13 +531,14 @@ class TRWebotsDriver:
             angles, velocities = self._read_wheel_velocities()
             self._publish_joint_states(stamp, angles, velocities)
             self._update_odometry(stamp, velocities)
-            self._publish_rangefinder(stamp)
+            self._publish_lidar(stamp)
+            self._publish_markers(stamp) # <--- PUBLISH MARKER DI SINI
 
             # TF Lidar
             tf_lidar = TransformStamped()
             tf_lidar.header.stamp = stamp
-            tf_lidar.header.frame_id = 'base_footprint'
-            tf_lidar.child_frame_id = 'lidar'
+            tf_lidar.header.frame_id = 'tr/base_footprint'
+            tf_lidar.child_frame_id = 'tr/lidar'
             
             tf_lidar.transform.translation.x = 0.21
             tf_lidar.transform.translation.y = 0.04
@@ -334,7 +553,7 @@ def main(args=None):
     driver = TRWebotsDriver()
     driver._node = node
     driver._robot = None
-    driver._cmd_vel_subscription = node.create_subscription(Twist, '/cmd_vel', driver._cmd_vel_callback, 10)
+    driver._cmd_vel_subscription = node.create_subscription(Twist, '/tr/cmd_vel', driver._cmd_vel_callback, 10)
     try:
         rclpy.spin(node)
     finally:

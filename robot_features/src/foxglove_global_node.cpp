@@ -7,23 +7,24 @@
 class FoxgloveGlobalNode : public rclcpp::Node {
 public:
     FoxgloveGlobalNode() : Node("foxglove_global_node"), robot_yaw_(0.0) {
-        // Subscriber dari UI HTML
+        // Subscriber dari UI HTML (TETAP, karena ini input dari Foxglove UI)
         sub_cmd_ = this->create_subscription<geometry_msgs::msg::Twist>(
             "/foxglove_cmd", 10, std::bind(&FoxgloveGlobalNode::cmd_callback, this, std::placeholders::_1));
         
+        // UBAH KE TOPIK TR
         sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
-            "/odom", 10, std::bind(&FoxgloveGlobalNode::odom_callback, this, std::placeholders::_1));
+            "/tr/odom", 10, std::bind(&FoxgloveGlobalNode::odom_callback, this, std::placeholders::_1));
 
-        // Subscriber capit dari UI HTML (TAMBAHAN)
+        // Subscriber capit dari UI HTML (TETAP)
         sub_grip_ = this->create_subscription<std_msgs::msg::Float64>(
             "/ui/gripper_cmd", 10, std::bind(&FoxgloveGlobalNode::grip_callback, this, std::placeholders::_1));
         
-        // Publisher ke robot
-        pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
-        pub_grip_ = this->create_publisher<std_msgs::msg::Float64>("/gripper_cmd", 10);
-        pub_tip_ = this->create_publisher<std_msgs::msg::Float64>("/gripper_tip_cmd", 10);
+        // Publisher ke robot TR
+        pub_ = this->create_publisher<geometry_msgs::msg::Twist>("/tr/cmd_vel", 10);
+        pub_grip_ = this->create_publisher<std_msgs::msg::Float64>("/tr/gripper_cmd", 10);
+        pub_tip_ = this->create_publisher<std_msgs::msg::Float64>("/tr/gripper_tip_cmd", 10);
         
-        RCLCPP_INFO(this->get_logger(), "FOXGLOVE GLOBAL NODE + GRIPPER STARTED");
+        RCLCPP_INFO(this->get_logger(), "FOXGLOVE GLOBAL NODE (TR) + GRIPPER STARTED");
     }
 
 private:

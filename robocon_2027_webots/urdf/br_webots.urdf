@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<robot name="br_robot">
+  <webots>
+    <plugin type="robocon_2027_webots.br_webots_driver.BRWebotsDriver"/>
+  </webots>
+</robot>

@@ -1,0 +1,16 @@
+# Goal
+string mode          # "MOVE" atau "PICK"
+string phase         # "1" = Komando 1, "2" = Komando 2
+float64 target_x
+float64 target_y
+string label
+float64 zone_x
+float64 zone_y
+---
+# Result
+bool success
+string message
+---
+# Feedback
+string current_state
+float64 progress

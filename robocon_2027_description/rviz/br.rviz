@@ -3,9 +3,12 @@ Panels:
     Help Height: 70
     Name: Displays
     Property Tree Widget:
-      Expanded: ~
+      Expanded:
+        - /Global Options1
+        - /RobotModel1
+        - /RobotModel1/Mass Properties1
       Splitter Ratio: 0.5
-    Tree Height: 612
+    Tree Height: 795
 Visualization Manager:
   Class: ""
   Displays:
@@ -37,7 +40,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /robot_description
+        Value: /br/robot_description
       Enabled: true
       Links:
         All Links Enabled: true
@@ -64,6 +67,26 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        gripper_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        gripper_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pillar_left_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        pillar_right_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         rear_left_wheel_link:
           Alpha: 1
           Show Axes: false
@@ -74,11 +97,16 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        z_axis_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
       Name: RobotModel
-      TF Prefix: ""
+      TF Prefix: /br
       Update Interval: 0
       Value: true
       Visual Enabled: true
@@ -119,28 +147,32 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /odom
+        Value: /br/odom
       Value: true
     - Class: rviz_default_plugins/TF
       Enabled: true
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        base_footprint:
+        br/base_footprint:
           Value: true
-        base_link:
+        br/base_link:
           Value: true
-        front_left_wheel_link:
+        br/lidar:
           Value: true
-        front_right_wheel_link:
+        br/odom:
           Value: true
-        lidar:
+        br/pillar_left_link:
           Value: true
-        odom:
+        br/pillar_right_link:
           Value: true
-        rear_left_wheel_link:
+        tr/base_footprint:
           Value: true
-        rear_right_wheel_link:
+        tr/base_link:
+          Value: true
+        tr/lidar:
+          Value: true
+        tr/odom:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -148,18 +180,20 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        odom:
-          base_footprint:
-            base_link:
-              front_left_wheel_link:
+        br/odom:
+          br/base_footprint:
+            br/base_link:
+              br/pillar_left_link:
                 {}
-              front_right_wheel_link:
+              br/pillar_right_link:
                 {}
-              rear_left_wheel_link:
-                {}
-              rear_right_wheel_link:
-                {}
-            lidar:
+            br/lidar:
+              {}
+        tr/odom:
+          tr/base_footprint:
+            tr/base_link:
+              {}
+            tr/lidar:
               {}
       Update Interval: 0
       Value: true
@@ -205,14 +239,14 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /tr_robot/lidar/point_cloud
+        Value: /br/lidar/point_cloud
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: odom
+    Fixed Frame: br/base_footprint
     Frame Rate: 30
   Name: root
   Tools:
@@ -242,18 +276,18 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8349997997283936
+      Pitch: 0.4000002145767212
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz_default_plugins)
-      Yaw: 3.7250118255615234
+      Yaw: 0.971875786781311
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1043
+  Height: 1016
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd000000010000000000000156000003b9fc0200000002fb000000100044006900730070006c006100790073010000003d000002e7000000c900fffffffb0000000c00430061006d006500720061010000032a000000cc0000002800ffffff00000624000003b900000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
-  Width: 1920
-  X: 1920
-  Y: 0
+  QMainWindow State: 000000ff00000000fd0000000100000000000001560000039efc0200000002fb000000100044006900730070006c006100790073010000003d0000039e000000c900fffffffb0000000c00430061006d006500720061010000032a000000cc0000000000000000000005de0000039e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Width: 1850
+  X: 70
+  Y: 27

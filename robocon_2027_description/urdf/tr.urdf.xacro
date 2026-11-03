@@ -271,20 +271,10 @@
 
   <!-- ==================================================== -->
   <!-- Joint base_footprint ke base_link                    -->
-  <!-- Tidak diberi offset karena geometry base_link sudah  -->
-  <!-- mempunyai origin sendiri terhadap frame base_link    -->
   <!-- ==================================================== -->
-
-  
 
   <!-- ==================================================== -->
   <!-- Susunan mecanum pola X -->
-  <!-- -->
-  <!-- Depan robot = +X -->
-  <!-- Kiri robot = +Y -->
-  <!-- -->
-  <!-- FL \ / FR -->
-  <!-- RL / \ RR -->
   <!-- ==================================================== -->
 
   <xacro:mecanum_wheel
@@ -314,5 +304,97 @@
     y="${-wheel_y}"
     z="${wheel_center_z}"
     roller_sign="-1"/>   
+
+  <!-- ==================================================== -->
+  <!-- TAMBAHAN: GRIPPER KIRI (Batang + Ujung Jari)          -->
+  <!-- ==================================================== -->
+  <link name="gripper_left_link">
+    <!-- 1. Batang Utama (Berdiri di titik 0,0,0 local) -->
+    <visual>
+      <origin xyz="0.125 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.02 0.02"/>
+      </geometry>
+      <material name="tr_blue"/>
+    </visual>
+    
+    <!-- 2. Ujung Jari (Tip) - Nyambung di ujung batang, menekuk ke samping -->
+    <visual>
+      <origin xyz="0.25 0 0" rpy="0 1.572 0"/>
+      <geometry>
+        <box size="0.06 0.04 0.15"/>
+      </geometry>
+      <material name="tr_blue"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.35 0.04 0.15"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <mass value="0.3"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- Joint Gripper Kiri -->
+  <joint name="gripper_left_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="gripper_left_link"/>
+    <!-- Anchor disesuaikan dengan Webots: X=0.30, Y=0.19, Z=0.11 -->
+    <origin xyz="0.30 0.19 0.11" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.0" upper="1.0" effort="35.0" velocity="1.0"/>
+  </joint>
+
+  <!-- ==================================================== -->
+  <!-- TAMBAHAN: GRIPPER KANAN (Batang + Ujung Jari)         -->
+  <!-- ==================================================== -->
+  <link name="gripper_right_link">
+    <!-- 1. Batang Utama -->
+    <visual>
+      <origin xyz="0.125 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.02 0.02"/>
+      </geometry>
+      <material name="tr_blue"/>
+    </visual>
+    
+    <!-- 2. Ujung Jari (Tip) - Nyambung di ujung batang, menekuk ke samping -->
+    <visual>
+      <origin xyz="0.25 0 0" rpy="0 -1.572 0"/>
+      <geometry>
+        <box size="0.06 0.04 0.15"/>
+      </geometry>
+      <material name="tr_blue"/>
+    </visual>
+
+    <collision>
+      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.35 0.04 0.15"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0.15 0 0" rpy="0 0 0"/>
+      <mass value="0.3"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+               iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <!-- Joint Gripper Kanan -->
+  <joint name="gripper_right_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="gripper_right_link"/>
+    <!-- Anchor disesuaikan dengan Webots: X=0.30, Y=-0.19, Z=0.11 -->
+    <origin xyz="0.30 -0.19 0.11" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-1.0" upper="1.0" effort="35.0" velocity="1.0"/>
+  </joint>
 
 </robot>
